@@ -1,14 +1,62 @@
 module Lib ( tweet) where
 
 import System.Environment (getArgs)
-import Network.Curl.Download
-import Data.List.Split
+import Network.Curl.Download (openURIString)
+import Data.List.Split (splitOn)
+import System.Process (callCommand)
+import System.Directory
+import Data.Time (getCurrentTime, getZonedTime)
+import Text.Printf (printf)
+import Prelude hiding (readFile)
+import System.IO.Strict (readFile)
 
-start :: String -> String -> IO()
-start title link = do
+getReadmeContent file = do
+    contents <- readFile file
+    return $ lines contents
+    
+saveReadmeContent file contents = do
+    writeFile file $ unlines contents
+
+insertAt :: a -> [a] -> Int -> [a]
+insertAt x ys 1 = x : ys
+insertAt x (y:ys) n = y : insertAt x ys (n - 1)
+
+formatMark at title url = do
+    zonedTime <- fmap show getZonedTime
+    return $ printf "- `[%s]` @%s [%s](%s)" (take 16 zonedTime) at title url
+    -- return $ printf "- `[%s]` [%s](%s)" at title url
+  
+processMark file at title url = do
+    lines <- getReadmeContent file
+    format <- formatMark at title url
+    let newLines  = insertAt format lines 3
+    
+    saveReadmeContent file newLines
+
+    putStrLn $ printf " -- %s" title
+    putStrLn $ printf " -- %s" url
+    
+commit :: String -> String -> IO()
+commit markRoot mark = do
+    let addCmd = printf "git -C %s add --all" markRoot
+    let commitCmd = printf "git -C %s commit -m \"%s\"" markRoot mark
+    let pushCmd = printf "git -C %s push -u github master" markRoot
+    
+    callCommand addCmd
+    callCommand commitCmd
+    callCommand pushCmd
+
+startTweet :: String -> String -> IO()
+startTweet title link = do
+    root <- getHomeDirectory
+    let markRoot = root ++ "/.tweets"
+    let readme = markRoot ++ "/README.md"
+
     let sp =  (!! 3) . splitOn  "/"
     let at = sp link
-    putStrLn at
+
+    processMark readme at title link
+    commit markRoot title
 
 tweet :: IO ()
 tweet = do  
@@ -21,6 +69,6 @@ tweet = do
             case content of
                 Left  err -> putStrLn $ "-- error " ++ err
                 Right text ->
-                    start title link
+                    startTweet title link
         _ -> do
             putStrLn "-- invalid arguments"
