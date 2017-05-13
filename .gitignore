@@ -1,0 +1,9 @@
+dist
+.DS_Store
+pacakges
+node_modules
+tools
+**/*.js.map
+.stack-work
+bin
+obj
