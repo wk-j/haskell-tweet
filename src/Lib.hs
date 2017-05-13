@@ -10,6 +10,7 @@ import Text.Printf (printf)
 import Prelude hiding (readFile)
 import System.IO.Strict (readFile)
 
+getReadmeContent :: String -> IO [String]
 getReadmeContent file = do
     contents <- readFile file
     return $ lines contents
@@ -21,14 +22,21 @@ insertAt :: a -> [a] -> Int -> [a]
 insertAt x ys 1 = x : ys
 insertAt x (y:ys) n = y : insertAt x ys (n - 1)
 
-formatMark at title url = do
+formatMark title url = do
+
+    let sp1 =  (!! 3) . splitOn  "/"
+    let at = sp1 url
+
+    let sp2 =  (!! 0) . splitOn  "/status/"
+    let atLink = sp2 url
+
     zonedTime <- fmap show getZonedTime
-    return $ printf "- `[%s]` @%s [%s](%s)" (take 16 zonedTime) at title url
+    return $ printf "- `[%s]` [@%s](%s) ~ [%s](%s)" (take 16 zonedTime) at atLink title url
     -- return $ printf "- `[%s]` [%s](%s)" at title url
   
-processMark file at title url = do
+processMark file title url = do
     lines <- getReadmeContent file
-    format <- formatMark at title url
+    format <- formatMark title url
     let newLines  = insertAt format lines 3
     
     saveReadmeContent file newLines
@@ -38,6 +46,7 @@ processMark file at title url = do
     
 commit :: String -> String -> IO()
 commit markRoot mark = do
+
     let addCmd = printf "git -C %s add --all" markRoot
     let commitCmd = printf "git -C %s commit -m \"%s\"" markRoot mark
     let pushCmd = printf "git -C %s push -u github master" markRoot
@@ -46,16 +55,12 @@ commit markRoot mark = do
     callCommand commitCmd
     callCommand pushCmd
 
-startTweet :: String -> String -> IO()
 startTweet title link = do
     root <- getHomeDirectory
     let markRoot = root ++ "/.tweets"
     let readme = markRoot ++ "/README.md"
 
-    let sp =  (!! 3) . splitOn  "/"
-    let at = sp link
-
-    processMark readme at title link
+    processMark readme title link
     commit markRoot title
 
 tweet :: IO ()
