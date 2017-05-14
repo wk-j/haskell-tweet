@@ -14,9 +14,9 @@ getReadmeContent :: String -> IO [String]
 getReadmeContent file = do
     contents <- readFile file
     return $ lines contents
-    
-saveReadmeContent file contents = do
-    writeFile file $ unlines contents
+
+saveReadmeContent file contents =
+  writeFile file $ unlines contents
 
 insertAt :: a -> [a] -> Int -> [a]
 insertAt x ys 1 = x : ys
@@ -33,24 +33,24 @@ formatMark title url = do
     zonedTime <- fmap show getZonedTime
     return $ printf "- `[%s]` [@%s](%s) ~ [%s](%s)" (take 16 zonedTime) at atLink title url
     -- return $ printf "- `[%s]` [%s](%s)" at title url
-  
+
 processMark file title url = do
     lines <- getReadmeContent file
     format <- formatMark title url
     let newLines  = insertAt format lines 3
-    
+
     saveReadmeContent file newLines
 
     putStrLn $ printf " -- %s" title
     putStrLn $ printf " -- %s" url
-    
+
 commit :: String -> String -> IO()
 commit markRoot mark = do
 
     let addCmd = printf "git -C %s add --all" markRoot
     let commitCmd = printf "git -C %s commit -m \"%s\"" markRoot mark
     let pushCmd = printf "git -C %s push -u github master" markRoot
-    
+
     callCommand addCmd
     callCommand commitCmd
     callCommand pushCmd
@@ -64,10 +64,10 @@ startTweet title link = do
     commit markRoot title
 
 tweet :: IO ()
-tweet = do  
+tweet = do
     args <- getArgs
 
-    case args of 
+    case args of
         [title, link] -> do
             content <- openURIString link
             putStrLn link
@@ -75,5 +75,4 @@ tweet = do
                 Left  err -> putStrLn $ "-- error " ++ err
                 Right text ->
                     startTweet title link
-        _ -> do
-            putStrLn "-- invalid arguments"
+        _ -> putStrLn "-- invalid arguments"
