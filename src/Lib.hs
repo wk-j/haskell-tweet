@@ -4,7 +4,7 @@ import System.Environment (getArgs)
 import Network.Curl.Download (openURIString)
 import Data.List.Split (splitOn)
 import System.Process (callCommand)
-import System.Directory
+import System.Directory (getHomeDirectory)
 import Data.Time (getCurrentTime, getZonedTime)
 import Text.Printf (printf)
 import Prelude hiding (readFile)
@@ -32,13 +32,11 @@ formatMark title url = do
 
     zonedTime <- fmap show getZonedTime
     return $ printf "- `[%s]` [@%s](%s) ~ [%s](%s)" (take 16 zonedTime) at atLink title url
-    -- return $ printf "- `[%s]` [%s](%s)" at title url
 
 processMark file title url = do
     lines <- getReadmeContent file
     format <- formatMark title url
     let newLines  = insertAt format lines 3
-
     saveReadmeContent file newLines
 
     putStrLn $ printf " -- %s" title
@@ -46,7 +44,6 @@ processMark file title url = do
 
 commit :: String -> String -> IO()
 commit markRoot mark = do
-
     let addCmd = printf "git -C %s add --all" markRoot
     let commitCmd = printf "git -C %s commit -m \"%s\"" markRoot mark
     let pushCmd = printf "git -C %s push -u github master" markRoot
