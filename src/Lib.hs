@@ -42,14 +42,17 @@ processMark file title url = do
     putStrLn $ printf " -- %s" title
     putStrLn $ printf " -- %s" url
 
+pull :: String -> IO()
+pull markRoot = do
+    let pullCmd =   printf "git -C %s pull" markRoot
+    callCommand pullCmd
+
 commit :: String -> String -> IO()
 commit markRoot mark = do
     let addCmd =    printf "git -C %s add --all" markRoot
     let commitCmd = printf "git -C %s commit -m \"%s\"" markRoot mark
-    let pullCmd =   printf "git -C %s pull" markRoot
     let pushCmd =   printf "git -C %s push -u origin master" markRoot
 
-    callCommand pullCmd
     callCommand addCmd
     callCommand commitCmd
     callCommand pushCmd
@@ -59,6 +62,7 @@ startTweet title link = do
     let markRoot = root ++ "/.tweets"
     let readme = markRoot ++ "/README.md"
 
+    pull markRoot
     processMark readme title link
     commit markRoot title
 
@@ -72,6 +76,6 @@ tweet = do
             putStrLn link
             case content of
                 Left  err -> putStrLn $ "-- error " ++ err
-                Right text ->
+                Right text -> 
                     startTweet title link
         _ -> putStrLn "-- invalid arguments"
